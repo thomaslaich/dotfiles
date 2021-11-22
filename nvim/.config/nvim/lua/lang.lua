@@ -1,6 +1,10 @@
 local lsp = require 'lspconfig'
 local utils = require 'utils'
 
+local capabilities = require('cmp_nvim_lsp').update_capabilities(vim.lsp
+                                                                     .protocol
+                                                                     .make_client_capabilities())
+
 utils.map('n', '<localleader>p', '<cmd>lua vim.lsp.diagnostic.goto_prev()<CR>')
 utils.map('n', '<localleader>n', '<cmd>lua vim.lsp.diagnostic.goto_next()<CR>')
 utils.map('n', '<localleader>a', '<cmd>lua vim.lsp.buf.code_action()<CR>')
@@ -12,14 +16,14 @@ utils.map('n', '<localleader>r', '<cmd>lua vim.lsp.buf.references()<CR>')
 utils.map('n', '<localleader>s', '<cmd>lua vim.lsp.buf.document_symbol()<CR>')
 utils.map('n', '<localleader>e', '<cmd>LspTroubleToggle<CR>')
 
-lsp.metals.setup {}
-lsp.pyright.setup {}
-lsp.gopls.setup {}
-lsp.texlab.setup {}
-lsp.bashls.setup {}
+lsp.metals.setup {capabilities = capabilities}
+lsp.pyright.setup {capabilities = capabilities}
+lsp.gopls.setup {capabilities = capabilities}
+lsp.texlab.setup {capabilities = capabilities}
+lsp.bashls.setup {capabilities = capabilities}
 
 -------------------------- lua ---------------------------------
-local sumneko_lua_root = "/Users/thomaslaich/repos/lua-language-server"
+local sumneko_lua_root = vim.env.HOME .. "/repos/lua-language-server"
 
 lsp.sumneko_lua.setup {
   cmd = {
@@ -46,27 +50,26 @@ lsp.sumneko_lua.setup {
         }
       },
       -- Do not send telemetry data containing a randomized but unique identifier
-      telemetry = {
-        enable = false
-      }
+      telemetry = {enable = false}
     }
-  }
+  },
+  capabilities = capabilities
 }
 
 -------------------------- typescript / javascript ---------------------------------
 lsp.tsserver.setup {
   cmd = {
     'node',
-    '/Users/thomaslaich/repos/typescript-language-server/server/lib/cli.js',
+    vim.env.HOME .. '/repos/typescript-language-server/server/lib/cli.js',
     '--stdio'
   },
-  init_options = {
-    document_formatting = false
-  }
+  init_options = {document_formatting = false},
+  capabilities = capabilities
 }
 
 local eslint = {
-  lintCommand = "node /Users/thomaslaich/repos/eslint_d.js/bin/eslint_d.js -f unix --stdin --stdin-filename ${INPUT}",
+  lintCommand = "node " .. vim.env.HOME ..
+      "/repos/eslint_d.js/bin/eslint_d.js -f unix --stdin --stdin-filename ${INPUT}",
   lintStdin = true,
   lintFormats = {"%f:%l:%c: %m"},
   lintIgnoreExitCode = true
@@ -82,9 +85,7 @@ local function get_eslint_config_path()
 end
 
 lsp.efm.setup {
-  init_options = {
-    document_formatting = false
-  },
+  init_options = {document_formatting = false},
   root_dir = get_eslint_config_path,
   settings = {
     rootMarkers = {".git/"},
@@ -144,21 +145,13 @@ require('formatter').setup({
     rust = {
       -- Rustfmt
       function()
-        return {
-          exe = "rustfmt",
-          args = {"--emit=stdout"},
-          stdin = true
-        }
+        return {exe = "rustfmt", args = {"--emit=stdout"}, stdin = true}
       end
     },
     lua = {
       -- luafmt
       function()
-        return {
-          exe = "lua-format",
-          args = {"--indent-width=2"},
-          stdin = true
-        }
+        return {exe = "lua-format", args = {"--indent-width=2"}, stdin = true}
       end
     },
     cpp = {

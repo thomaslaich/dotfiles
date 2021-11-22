@@ -1,116 +1,184 @@
 local utils = require('utils')
 local cmd = vim.cmd
+local fn = vim.fn
 local g = vim.g
 
-cmd 'packadd paq-nvim'
-local paq = require'paq-nvim'.paq  -- Import module and bind `paq` function
+local install_path = fn.stdpath('data') .. '/site/pack/packer/start/packer.nvim'
+if fn.empty(fn.glob(install_path)) > 0 then
+  packer_bootstrap = fn.system({
+    'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim',
+    install_path
+  })
+end
 
-paq'savq/paq-nvim';                  -- Let Paq manage itself
+-- Only required if you have packer configured as `opt`
+vim.cmd [[packadd packer.nvim]]
 
--- general language feature plugs
-paq'neovim/nvim-lspconfig'
-paq'hrsh7th/nvim-compe'
-paq'hrsh7th/vim-vsnip'
-paq'hrsh7th/vim-vsnip-integ'
-paq'nvim-treesitter/nvim-treesitter'
--- paq'mhartington/formatter.nvim'
+require('packer').startup(function(use)
+  -- Packer can manage itself
+  use 'wbthomason/packer.nvim'
 
--- general utilities
-paq'terryma/vim-multiple-cursors'
-paq'tpope/vim-surround'
-paq{'phaazon/hop.nvim', as='hop'}
-paq'terrortylor/nvim-comment'
+  -- general language feature plugs
+  use 'neovim/nvim-lspconfig'
+  use 'hrsh7th/cmp-nvim-lsp'
+  use 'hrsh7th/cmp-buffer'
+  use 'hrsh7th/cmp-path'
+  use 'hrsh7th/cmp-cmdline'
+  use 'hrsh7th/nvim-cmp'
+  use 'hrsh7th/vim-vsnip'
 
--- theming
-paq'folke/tokyonight.nvim'
-paq'kyazdani42/nvim-web-devicons'
-paq'lukas-reineke/indent-blankline.nvim'
-paq'norcalli/nvim-colorizer.lua'    -- highlight hex strings
+  use {
+    'nvim-treesitter/nvim-treesitter',
+    run = ':TSUpdate',
+    config = function()
+      require'nvim-treesitter.configs'.setup {
+        ensure_installed = "maintained", -- one of "all", "maintained" (parsers with maintainers), or a list of languages
+        highlight = {
+          enable = true, -- false will disable the whole extension
+          disable = {} -- list of language that will be disabled
+        },
+        playground = {
+          enable = true,
+          disable = {},
+          updatetime = 25, -- Debounced time for highlighting nodes in the playground from source code
+          persist_queries = false -- Whether the query persists across vim sessions
+        },
+        rainbow = {enable = true},
+        textobjects = {
+          select = {
+            enable = true,
 
--- Git
-paq'lewis6991/gitsigns.nvim'
-paq'tpope/vim-fugitive'
-paq'f-person/git-blame.nvim'
-paq'kdheepak/lazygit.nvim'
+            -- Automatically jump forward to textobj, similar to targets.vim 
+            lookahead = true,
 
-paq{'lervag/vimtex', opt=true}
+            keymaps = {
+              -- You can use the capture groups defined in textobjects.scm
+              ["af"] = "@function.outer",
+              ["if"] = "@function.inner",
+              ["ac"] = "@class.outer",
+              ["ic"] = "@class.inner"
+            }
+          }
+        }
+      }
+    end
+  }
+  use 'mhartington/formatter.nvim'
 
--- GUI stuff
-paq'kyazdani42/nvim-tree.lua'
-paq{'glepnir/galaxyline.nvim', branch='main'}
-paq'nvim-lua/popup.nvim' -- required for telescope
-paq'nvim-lua/plenary.nvim' -- required for telescope
-paq'nvim-telescope/telescope.nvim'
-paq'akinsho/nvim-bufferline.lua'
-paq'folke/trouble.nvim'
-paq'folke/which-key.nvim'
+  -- general utilities
+  use 'terryma/vim-multiple-cursors'
+  use 'tpope/vim-surround'
+  use {
+    'phaazon/hop.nvim',
+    as = 'hop',
+    config = function() require'hop'.setup() end
+  }
+  use {
+    'terrortylor/nvim-comment',
+    config = function() require('nvim_comment').setup() end
+  }
 
-------------------- colorizer -----------------------
-require'colorizer'.setup()
+  -- theming
+  use 'folke/tokyonight.nvim'
+  use {
+    'kyazdani42/nvim-web-devicons',
+    config = function()
+      require'nvim-web-devicons'.setup {
+        -- globally enable default icons (default to false)
+        -- will get overriden by `get_icons` option
+        default = true
+      }
+    end
+  }
+  use 'lukas-reineke/indent-blankline.nvim'
+  use {
+    'norcalli/nvim-colorizer.lua', -- highlight hex strings
+    config = function() require('colorizer').setup() end
+  }
 
+  -- Git
+  use {
+    'lewis6991/gitsigns.nvim',
+    requires = {'nvim-lua/plenary.nvim'},
+    config = function() require('gitsigns').setup() end
+  }
+  use 'tpope/vim-fugitive'
+  use 'f-person/git-blame.nvim'
+  use 'kdheepak/lazygit.nvim'
+
+  use {'lervag/vimtex', opt = true}
+
+  -- GUI stuff
+  use 'kyazdani42/nvim-tree.lua'
+  use {'glepnir/galaxyline.nvim', branch = 'main'}
+  use {
+    'nvim-telescope/telescope.nvim',
+    requires = {'nvim-lua/popup.nvim', 'nvim-lua/plenary.nvim'}
+  }
+
+  use {
+    'akinsho/nvim-bufferline.lua',
+    config = function()
+      require('bufferline').setup {
+        options = {numbers = 'buffer_id', diagnostics = 'nvim_lsp'}
+      }
+    end
+  }
+  use {
+    'folke/trouble.nvim',
+    config = function() require('trouble').setup {} end
+  }
+  use {
+    'folke/which-key.nvim',
+    config = function() require("which-key").setup {} end
+  }
+
+  -- Automatically set up your configuration after cloning packer.nvim
+  -- Put this at the end after all plugins
+  if packer_bootstrap then require('packer').sync() end
+end)
+
+-- Setup nvim-cmp.
+local cmp = require 'cmp'
+
+cmp.setup({
+  snippet = {
+    -- REQUIRED - you must specify a snippet engine
+    expand = function(args)
+      vim.fn["vsnip#anonymous"](args.body) -- For `vsnip` users.
+      -- require('luasnip').lsp_expand(args.body) -- For `luasnip` users.
+      -- vim.fn["UltiSnips#Anon"](args.body) -- For `ultisnips` users.
+      -- require'snippy'.expand_snippet(args.body) -- For `snippy` users.
+    end
+  },
+  mapping = {
+    ['<C-b>'] = cmp.mapping(cmp.mapping.scroll_docs(-4), {'i', 'c'}),
+    ['<C-f>'] = cmp.mapping(cmp.mapping.scroll_docs(4), {'i', 'c'}),
+    ['<C-Space>'] = cmp.mapping(cmp.mapping.complete(), {'i', 'c'}),
+    ['<C-y>'] = cmp.config.disable, -- Specify `cmp.config.disable` if you want to remove the default `<C-y>` mapping.
+    ['<C-e>'] = cmp.mapping({i = cmp.mapping.abort(), c = cmp.mapping.close()}),
+    ['<CR>'] = cmp.mapping.confirm({select = true})
+  },
+  sources = cmp.config.sources({
+    {name = 'nvim_lsp'}, {name = 'vsnip'} -- For vsnip users.
+    -- { name = 'luasnip' }, -- For luasnip users.
+    -- { name = 'ultisnips' }, -- For ultisnips users.
+    -- { name = 'snippy' }, -- For snippy users.
+  }, {{name = 'buffer'}})
+})
+
+-- Use buffer source for `/` (if you enabled `native_menu`, this won't work anymore).
+cmp.setup.cmdline('/', {sources = {{name = 'buffer'}}})
+
+-- Use cmdline & path source for ':' (if you enabled `native_menu`, this won't work anymore).
+cmp.setup.cmdline(':', {
+  sources = cmp.config.sources({{name = 'path'}}, {{name = 'cmdline'}})
+})
 
 ------------------- colorscheme ---------------------
 -- cmd 'colorscheme onedark'
 g.tokyonight_style = "storm"
-cmd[[colorscheme tokyonight]]
-
---------------------- compe -------------------------
-require'compe'.setup {
-  enabled = true;
-  autocomplete = true;
-  debug = false;
-  min_length = 1;
-  preselect = 'enable';
-  throttle_time = 80;
-  source_timeout = 200;
-  incomplete_delay = 400;
-  max_abbr_width = 100;
-  max_kind_width = 100;
-  max_menu_width = 100;
-  documentation = true;
-
-  source = {
-    path = true,
-    buffer = true,
-    calc = true,
-    vsnip = true,
-    nvim_lsp = true,
-    nvim_lua = true,
-    spell = true,
-    tags = true,
-    snippets_nvim = true,
-    treesitter = true,
-    vim_dadbod_completion = true
-  };
-}
-
--------------------- devicons -----------------------
-require'nvim-web-devicons'.setup {
- -- globally enable default icons (default to false)
- -- will get overriden by `get_icons` option
- default = true;
-}
-
--------------------- fugitive -----------------------
-utils.map('n', '<Leader>gs', '<cmd>G<CR>')
-utils.map('n', '<Leader>gp', '<cmd>GPush<CR>')
-utils.map('n', '<Leader>gd', '<cmd>Gvdiffsplit<CR>')
-utils.map('n', '<Leader>gf', '<cmd>Fit fetch --all<CR>')
-utils.map('n', '<Leader>grum', '<cmd>Grebase upstream/master<CR>')
-utils.map('n', '<Leader>grom', '<cmd>Grebase origin/master<CR>')
-utils.map('n', '<Leader>gdr', '<cmd>diffget //3<CR>')
-utils.map('n', '<Leader>gdl', '<cmd>diffget //2<CR>')
--------------------- git-blame ---------------------
-utils.map('n', '<leader>gt', "<cmd>GitBlameToggle<CR>")
-
-
--------------------- gitsigns -----------------------
-require'gitsigns'.setup()
-
----------------------- hop --------------------------
-require'hop'.setup()
-
-utils.map('n', '<leader>w', '<cmd>HopWord<CR>')
+cmd [[colorscheme tokyonight]]
 
 ----------------- indent-blankline ------------------
 vim.cmd([[
@@ -118,63 +186,4 @@ vim.cmd([[
 ]])
 -- let g:indent_blankline_use_treesitter = v:true
 
--------------------- bufferline ---------------------
-require('bufferline').setup{
-  options = {
-    numbers = 'buffer_id',
-    diagnostics = 'nvim_lsp',
-  }
-}
-
--------------------- nvim-tree ----------------------
-require'nvim-tree'.setup {}
-utils.map('n', '<leader>n', '<cmd>lua require "nvim-tree".toggle()<CR>')
-
---------------------- telescope ---------------------
-utils.map('n', '<leader>ff', "<cmd>lua require('telescope.builtin').find_files()<CR>")
-utils.map('n', '<leader>fg', "<cmd>lua require('telescope.builtin').live_grep()<CR>")
-utils.map('n', '<leader>fb', "<cmd>lua require('telescope.builtin').buffers()<CR>")
-utils.map('n', '<leader>fh', "<cmd>lua require('telescope.builtin').help_tags()<CR>")
-
-
--------------------- treesitter ---------------------
-require'nvim-treesitter.configs'.setup {
-    ensure_installed = "maintained", -- one of "all", "maintained" (parsers with maintainers), or a list of languages
-    highlight = {
-        enable = true, -- false will disable the whole extension
-        disable = {} -- list of language that will be disabled
-    },
-    playground = {
-        enable = true,
-        disable = {},
-        updatetime = 25, -- Debounced time for highlighting nodes in the playground from source code
-        persist_queries = false -- Whether the query persists across vim sessions
-    },
-    rainbow = {enable = true},
-    textobjects = {
-        select = {
-            enable = true,
-
-            -- Automatically jump forward to textobj, similar to targets.vim 
-            lookahead = true,
-
-            keymaps = {
-                -- You can use the capture groups defined in textobjects.scm
-                ["af"] = "@function.outer",
-                ["if"] = "@function.inner",
-                ["ac"] = "@class.outer",
-                ["ic"] = "@class.inner"
-            }
-        }
-    }
-}
-
------------------- nvim-trouble --------------------
-require('trouble').setup {}
-
-------------------- which-key ----------------------
-require("which-key").setup {}
-
------------------- nvim-comment --------------------
-require('nvim_comment').setup()
-
+require'nvim-tree'.setup()
